@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f28c28">
+    <meta name="description" content="App web de estudiantes de la Facultad de Trabajo Social - Ramón Carrillo">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="FTS Carrillo">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <title>App FTS - Ramón Carrillo</title>
+    <style>
+        :root {
+            --primary: #f26522; /* Naranja Ramón Carrillo */
+            --secondary: #003366; /* Azul UNLP */
+            --bg-light: #ffffff;
+            --text-light: #333333;
+            --card-light: #f4f4f4;
+            --bg-dark: #121212;
+            --text-dark: #e0e0e0;
+            --card-dark: #1e1e1e;
+        }
+
+        body.light {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+        body.dark {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; transition: background 0.3s, color 0.3s; margin: 0; padding: 0; }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .header-title { font-weight: bold; font-size: 1.2rem; }
+        .theme-toggle { background: none; border: 1px solid white; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+
+        .nav-scroll {
+            display: flex;
+            overflow-x: auto;
+            background: var(--secondary);
+            padding: 10px;
+            gap: 10px;
+        }
+        .nav-scroll button {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .nav-scroll button.active { background: var(--primary); font-weight: bold; }
+        .nav-scroll::-webkit-scrollbar { display: none; }
+
+        main { padding: 20px; padding-bottom: 80px; max-width: 800px; margin: auto; }
+        .section { display: none; }
+        .section.active { display: block; }
+        .back-row { display:flex; align-items:center; gap:10px; margin:4px 0 14px; }
+        .back-button { border:1px solid var(--border); background:var(--card-light); color:inherit; padding:9px 13px; border-radius:11px; cursor:pointer; font-weight:700; display:inline-flex; align-items:center; gap:6px; box-shadow:0 1px 3px rgba(0,0,0,.05); }
+        .back-button:hover { transform:translateX(-1px); }
+        body.dark .back-button { background:var(--card-dark); border-color:#444; }
+
+        .card {
+            background: var(--card-light);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        body.dark .card { background: var(--card-dark); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        
+        .badge {
+            display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; color: white; margin-bottom: 5px;
+        }
+        .b-aprobada { background: #28a745; }
+        .b-cursando { background: #007bff; }
+        .b-regular { background: #ffc107; color: black; }
+        .b-pendiente { background: #6c757d; }
+        .b-libre { background: #dc3545; }
+        .b-final { background: #dc3545; color: white; }
+
+        .subject-item {
+            display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #ccc;
+        }
+        body.dark .subject-item { border-bottom: 1px solid #444; }
+        
+        select.status-select { padding: 5px; border-radius: 5px; background: inherit; color: inherit; border: 1px solid #888; }
+        
+        .correlativa-info { font-size: 0.8rem; color: #888; margin-top: 5px; display:block; }
+        .lock-icon { font-size: 0.8rem; margin-right:5px;}
+
+        h2, h3 { margin-bottom: 15px; margin-top: 20px; }
+        
+        .btn-action {
+            background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px;
+        }
+        .btn-action:hover { opacity: 0.9; }
+
+        .progress-bar-bg { background: #ccc; border-radius: 10px; height: 10px; width: 100%; margin-top: 5px; overflow: hidden; }
+        .progress-bar-fill { background: var(--primary); height: 100%; width: 0%; transition: width 0.5s; }
+
+
+        /* CALENDARIO */
+        .calendar-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:15px; }
+        .calendar-toolbar button { width:auto; margin:0; }
+        .calendar-title { flex:1; text-align:center; font-size:1.15rem; font-weight:bold; min-width:180px; }
+        .calendar-search { width:100%; padding:10px; border:1px solid #999; border-radius:7px; background:inherit; color:inherit; margin-bottom:12px; }
+        .calendar-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+        .calendar-weekday { text-align:center; font-weight:bold; font-size:.78rem; padding:6px 2px; color:#666; }
+        .calendar-day { min-height:58px; padding:7px 4px; border:1px solid #ddd; border-radius:7px; background:var(--card-light); color:inherit; cursor:pointer; text-align:left; position:relative; }
+        body.dark .calendar-day { background:var(--card-dark); border-color:#444; }
+        .calendar-day:hover { outline:2px solid var(--primary); }
+        .calendar-day.other-month { opacity:.35; }
+        .calendar-day.today { border:2px solid var(--primary); }
+        .calendar-day.has-event::after { content:""; width:7px; height:7px; border-radius:50%; background:var(--primary); position:absolute; right:6px; bottom:6px; }
+        .calendar-day-number { font-weight:bold; }
+        .calendar-event-list { margin-top:5px; font-size:.68rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        /* BIBLIOTECA */
+        .library-breadcrumb { display:flex; gap:7px; flex-wrap:wrap; margin-bottom:12px; font-size:.9rem; }
+        .library-breadcrumb button { border:0; background:none; color:var(--primary); cursor:pointer; padding:0; }
+        .folder-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+        .folder-card { background:var(--card-light); border:1px solid #ddd; border-radius:10px; padding:15px; cursor:pointer; }
+        body.dark .folder-card { background:var(--card-dark); border-color:#444; }
+        .folder-card:hover { border-color:var(--primary); }
+        .file-card { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+        .file-card .btn-action { width:auto; margin:0; padding:7px 12px; }
+
+        /* DEMANDAS */
+        .demand-filter { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:15px; }
+        .demand-filter input, .demand-filter select { flex:1; min-width:180px; padding:10px; border:1px solid #999; border-radius:7px; background:inherit; color:inherit; }
+        .demand-status { font-size:.75rem; padding:3px 8px; border-radius:12px; font-weight:bold; background:#ffc107; color:#111; }
+        .demand-status.resuelta { background:#28a745; color:white; }
+        .demand-meta { color:#777; font-size:.82rem; margin-top:6px; }
+        .demand-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .demand-actions button { width:auto; }
+
+        /* MODAL EVENTO PERSONAL */
+        .event-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.58);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;z-index:400;padding:18px}
+        .event-modal{width:min(480px,100%);background:var(--bg-light);color:var(--text-light);border-radius:24px;box-shadow:0 24px 70px rgba(0,0,0,.28);overflow:hidden;animation:eventModalIn .18s ease-out}
+        body.dark .event-modal{background:var(--card-dark);color:var(--text-dark)}
+        .event-modal-head{padding:20px 22px 16px;background:linear-gradient(135deg,rgba(242,140,40,.16),rgba(255,179,71,.08));display:flex;align-items:center;justify-content:space-between}
+        .event-modal-head h3{margin:0;font-size:1.2rem}.event-modal-close{border:0;background:rgba(127,127,127,.12);width:36px;height:36px;border-radius:50%;font-size:1.15rem;cursor:pointer;color:inherit}
+        .event-modal-body{padding:20px 22px}.event-field{margin-bottom:14px}.event-field label{display:block;font-weight:700;font-size:.88rem;margin-bottom:6px}.event-field input,.event-field textarea{width:100%;box-sizing:border-box;padding:12px 13px;border:1px solid #c9c9c9;border-radius:12px;background:transparent;color:inherit;font:inherit;outline:none}.event-field input:focus,.event-field textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(242,140,40,.12)}.event-modal-actions{display:flex;gap:10px;margin-top:18px}.event-modal-actions button{flex:1;margin:0}.event-cancel{background:#e9ecef!important;color:#333!important}.event-hint{font-size:.78rem;color:#777;margin-top:4px}
+        @keyframes eventModalIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+
+        /* LOGIN */
+        .auth-bar { display:flex; align-items:center; gap:8px; margin-left:auto; }
+        .auth-user { font-size:.85rem; }
+        .auth-btn { border:0; border-radius:8px; padding:8px 11px; cursor:pointer; background:rgba(255,255,255,.18); color:#fff; font-weight:700; }
+        .login-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; align-items:center; justify-content:center; z-index:300; padding:20px; }
+        .login-box { width:min(420px,100%); background:var(--bg-light); color:var(--text-light); border-radius:18px; padding:22px; box-shadow:0 15px 50px rgba(0,0,0,.3); }
+        body.dark .login-box { background:var(--card-dark); color:var(--text-dark); }
+        .login-box input { width:100%; padding:11px; margin:7px 0; border:1px solid #aaa; border-radius:8px; background:inherit; color:inherit; }
+        .login-switch { color:var(--primary); cursor:pointer; font-weight:700; }
+        .admin-only { display:none; }
+        .delete-demand { background:#dc3545 !important; }
+
+    
+        /* ===== Mejoras de interfaz móvil - Web Ramón Carrillo ===== */
+        .mobile-bottom-nav { display:none; }
+        .brand-mark { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:linear-gradient(135deg,#f28c28,#ffb347); color:#fff; box-shadow:0 3px 10px rgba(242,140,40,.25); margin-right:8px; }
+        .quick-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin:15px 0; }
+        .quick-card { border:1px solid var(--border,#ddd); border-radius:14px; padding:14px; background:var(--card,#fff); cursor:pointer; transition:.15s; }
+        .quick-card:hover { transform:translateY(-1px); }
+        .quick-card strong { display:block; margin-top:5px; }
+        @media (max-width: 700px) {
+            body { padding-bottom:76px; }
+            header { position:sticky; top:0; z-index:50; padding:10px 14px; }
+            .header-title { font-size:1rem; display:flex; align-items:center; }
+            .theme-toggle { padding:8px 10px !important; font-size:.82rem; }
+            .nav-scroll { display:none !important; }
+            main { padding:14px; padding-bottom:92px; max-width:100%; }
+            .card, .section-card { border-radius:16px; }
+            .quick-grid { grid-template-columns:repeat(2,1fr); }
+            .mobile-bottom-nav { position:fixed; display:grid; grid-template-columns:repeat(5,1fr); left:0; right:0; bottom:0; z-index:100; padding:7px 5px calc(7px + env(safe-area-inset-bottom)); background:rgba(255,255,255,.97); border-top:1px solid #ddd; box-shadow:0 -4px 18px rgba(0,0,0,.08); backdrop-filter:blur(10px); }
+            body.dark .mobile-bottom-nav { background:rgba(28,28,28,.97); border-top-color:#444; }
+            .mobile-bottom-nav button { border:0; background:transparent; color:inherit; padding:7px 2px; border-radius:11px; font-size:.69rem; line-height:1.15; cursor:pointer; }
+            .mobile-bottom-nav button span { display:block; font-size:1.2rem; margin-bottom:2px; }
+            .mobile-bottom-nav button.active { background:rgba(242,140,40,.14); color:var(--primary); font-weight:700; }
+            .calendar-grid { gap:3px !important; }
+            .calendar-day { min-height:43px !important; padding:5px !important; font-size:.82rem; }
+            .subject-item { gap:8px; align-items:flex-start; }
+            .subject-item .status-select { max-width:125px; }
+        }
+
+
+        .quick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:18px 0}.quick-card{border:1px solid var(--border);background:var(--card-light);color:inherit;border-radius:16px;padding:18px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:5px;font-size:1.4rem}.quick-card strong{font-size:1rem}.quick-card small{font-size:.8rem;color:#777}.announcement-card{margin-top:12px}.secondary-btn{background:var(--secondary)}.profile-card{display:flex;align-items:center;gap:15px}.avatar{width:58px;height:58px;border-radius:50%;background:rgba(242,140,40,.15);display:grid;place-items:center;font-size:1.8rem}.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:15px 0}.stat-card{background:var(--card-light);border-radius:14px;padding:16px;text-align:center;border:1px solid var(--border)}.stat-card strong{display:block;font-size:1.5rem;color:var(--primary)}.stat-card span{font-size:.8rem;color:#777}.admin-section{border-top:3px solid var(--primary)}
+    </style>
+</head>
+<body class="light">
+
+    <div id="eventModalOverlay" class="event-modal-overlay" onclick="if(event.target===this)closeEventModal()">
+      <div class="event-modal" role="dialog" aria-modal="true" aria-labelledby="eventModalTitle">
+        <div class="event-modal-head"><h3 id="eventModalTitle">📅 Nuevo evento personal</h3><button class="event-modal-close" onclick="closeEventModal()">✕</button></div>
+        <div class="event-modal-body">
+          <div class="event-field"><label for="eventDate">Fecha</label><input id="eventDate" type="date"></div>
+          <div class="event-field"><label for="eventTitle">Título</label><input id="eventTitle" maxlength="80" placeholder="Ej.: Parcial de Teoría Social"></div>
+          <div class="event-field"><label for="eventDescription">Descripción <span style="font-weight:400;color:#777">(opcional)</span></label><textarea id="eventDescription" rows="3" maxlength="240" placeholder="Agregá un detalle si querés..."></textarea></div>
+          <div class="event-hint">Este evento es personal y queda guardado en este navegador.</div>
+          <div class="event-modal-actions"><button class="btn-action event-cancel" onclick="closeEventModal()">Cancelar</button><button class="btn-action" onclick="saveCalendarEvent()">💾 Guardar evento</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loginOverlay" class="login-overlay">
+      <div class="login-box">
+        <h2 id="loginTitle">🔐 Iniciar sesión</h2>
+        <p id="loginHint">Entrá para guardar tu progreso y participar en la web.</p>
+        <input id="loginName" placeholder="Nombre y apellido" style="display:none">
+        <input id="loginEmail" type="email" placeholder="Correo electrónico">
+        <input id="loginPassword" type="password" placeholder="Contraseña">
+        <button class="btn-action" onclick="submitAuth()" id="loginSubmit">Iniciar sesión</button>
+        <p style="margin-top:12px;text-align:center"><span id="authSwitchText">¿No tenés cuenta?</span> <span class="login-switch" onclick="toggleAuthMode()" id="authSwitch">Registrate</span></p>
+        <button class="btn-action" style="background:#777" onclick="closeLogin()">Cerrar</button>
+      </div>
+    </div>
+
+    <header>
+        <div class="header-title"><span class="brand-mark">RC</span> FTS Ramón Carrillo</div>
+        <div class="auth-bar">
+            <span id="authUser" class="auth-user">No iniciado</span>
+            <button id="authButton" class="auth-btn" onclick="openLogin()">🔐 Iniciar sesión</button>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+        </div>
+    </header>
+
+    <div class="nav-scroll">
+        <button class="active" onclick="showSection('inicio')">🏠 Inicio</button>
+        <button onclick="showSection('carrera')">🎓 Mi Carrera</button>
+        <button onclick="showSection('estudiemos')">📚 Estudiemos</button>
+        <button onclick="showSection('calendario')">📅 Calendario</button>
+        <button onclick="showSection('tramites')">📝 Trámites</button>
+        <button onclick="showSection('demandas')">📣 Demandas</button>
+        <button onclick="showSection('noticias')">📰 Noticias</button>
+        <button onclick="showSection('ayuda')">🆘 Ayuda</button>
+        <button onclick="showSection('perfil')">👤 Perfil</button>
+        <button class="admin-nav admin-only" onclick="showSection('admin')">⚙️ Admin</button>
+    </div>
+
+    <main>
+        <!-- INICIO -->
+        <div id="inicio" class="section active">
+            <h2 id="greeting-title">Hola estudiante 👋</h2>
+            <div class="card">
+                <span class="badge" style="background: var(--secondary)">HOY</span>
+                <h3>Teoría Social</h3>
+                <p>📍 Aula 4 - 18:00 hs</p>
+            </div>
+            <div class="card">
+                <span class="badge" style="background: var(--primary)">ALERTA ROJA</span>
+                <h3>Inscripción a finales</h3>
+                <p>Cierra mañana a las 23:59 a través de SIU Guaraní.</p>
+            </div>
+            <div class="card">
+                <span class="badge" style="background: #28a745">NOVEDAD AGRUPACIÓN</span>
+                <h3>¡Nuevos apuntes subidos!</h3>
+                <p>Ya está disponible el material de la Unidad 3 de Economía Política en la sección biblioteca.</p>
+            </div>
+        <div id="homeAlerts"></div>
+        <div class="quick-grid">
+          <button class="quick-card" onclick="showSection('carrera')">🎓<strong>Mi carrera</strong><small>Materias y progreso</small></button>
+          <button class="quick-card" onclick="showSection('estudiemos')">📚<strong>Biblioteca</strong><small>Apuntes y textos</small></button>
+          <button class="quick-card" onclick="showSection('calendario')">📅<strong>Agenda</strong><small>Fechas importantes</small></button>
+          <button class="quick-card" onclick="showSection('demandas')">📣<strong>Demandas</strong><small>Participá y consultá</small></button>
+        </div>
+        <div class="card announcement-card"><span class="badge" style="background:var(--secondary)">PLATAFORMA ESTUDIANTIL</span><h3>Todo en un solo lugar</h3><p>Consultá tu carrera, biblioteca, calendario, trámites, demandas y novedades desde la misma web.</p></div>
+        </div>
+
+        <!-- MI CARRERA -->
+        <div id="carrera" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Mi Carrera</span></div>
+            <h2>🎓 Mi Carrera y Correlatividades</h2>
+            <p>Seleccioná tu carrera para ver tu plan y actualizar tu estado.</p>
+            
+            <select id="careerSelect" class="status-select" style="width: 100%; margin-bottom: 20px; padding: 10px;" onchange="renderPlan()">
+                <option value="ts">Licenciatura en Trabajo Social (Plan 2015)</option>
+                <option value="fono">Licenciatura en Fonoaudiología</option>
+                <option value="tgcr">Tecnicatura en Gestión Comunitaria del Riesgo</option>
+            </select>
+
+            <div class="card">
+                <h3>Mi Progreso</h3>
+                <p>Materias Aprobadas: <span id="aprobadasCount">0</span></p><p>Regularizadas / Final pendiente: <span id="finalCount">0</span></p><p>Progreso: <strong id="progressPercent">0%</strong></p>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="progressBar"></div>
+                </div>
+            </div>
+
+            <div id="planContainer">
+                <!-- Se inyecta con JS -->
+            </div>
+        </div>
+
+        <!-- OTRAS SECCIONES (Resumidas para visualización) -->
+        <div id="estudiemos" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Biblioteca / Estudiemos</span></div>
+            <h2>📚 Biblioteca Digital</h2>
+            <p>Elegí una carrera, después el año y finalmente la materia para ver o subir textos.</p>
+            <input id="librarySearch" type="text" placeholder="🔎 Buscar materia, autor o texto..." class="calendar-search" oninput="renderLibrary()">
+            <div id="libraryBreadcrumb" class="library-breadcrumb"></div>
+            <div id="libraryContainer"></div>
+        </div>
+        
+        <div id="calendario" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Calendario</span></div>
+            <h2>📅 Calendario</h2>
+            <input id="calendarSearch" type="text" placeholder="🔎 Buscar una fecha (ej.: 14/08, 14 agosto, agosto)..." class="calendar-search" oninput="searchCalendar()">
+            <div class="calendar-toolbar">
+                <button class="btn-action" onclick="changeMonth(-1)">‹</button>
+                <div id="calendarTitle" class="calendar-title"></div>
+                <button class="btn-action" onclick="changeMonth(1)">›</button>
+                <button class="btn-action" onclick="goToday()">Hoy</button>
+            </div>
+            <div id="calendarSearchResults"></div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+            <div id="selectedDateEvents" class="card" style="display:none;"></div>
+            <button class="btn-action" onclick="addCalendarEvent()">➕ Agregar evento personal</button>
+        </div>
+
+        <div id="tramites" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Trámites</span></div>
+            <h2>📝 Guía de Trámites</h2>
+            <div class="card"><h3>Certificado de Alumno Regular</h3><p>Se descarga directamente desde SIU Guaraní > Reportes.</p></div>
+            <div class="card"><h3>Boleto Educativo Gratuito</h3><p>Inscripción abierta a través del portal de la Provincia. Requiere tener SUBE registrada a tu nombre.</p></div>
+        </div>
+
+        <div id="ayuda" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Ayuda</span></div>
+            <h2>🆘 ¿Qué necesitás?</h2>
+            <p>Seleccioná el problema para derivarte al área correspondiente:</p>
+            <button class="btn-action" style="background:#dc3545;">📚 Tengo un problema académico con una materia</button>
+            <button class="btn-action" style="background:#28a745;">💰 Necesito información sobre Becas</button>
+            <button class="btn-action" style="background:#17a2b8;">⚖️ Problemas administrativos / SIU Guaraní</button>
+            <button class="btn-action" style="background:var(--primary);">🟠 Quiero hablar con alguien de la agrupación</button>
+        </div>
+
+        <div id="demandas" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Demandas</span></div>
+            <h2>📣 Demandas públicas</h2>
+            <p>Espacio para registrar demandas de estudiantes y de la comunidad universitaria. Las publicaciones son visibles públicamente.</p>
+            <div class="card">
+                <h3>➕ Publicar una demanda</h3>
+                <input id="demandTitle" class="calendar-search" placeholder="Título de la demanda">
+                <textarea id="demandDescription" class="calendar-search" rows="5" placeholder="Contá qué está pasando y qué se solicita..."></textarea>
+                <button class="btn-action" onclick="publishDemand()">📣 Publicar demanda</button>
+            </div>
+            <div class="demand-filter">
+                <input id="demandSearch" placeholder="🔎 Buscar demandas..." oninput="renderDemands()">
+                <select id="demandFilter" onchange="renderDemands()">
+                    <option value="todas">Todas</option>
+                    <option value="abierta">Abiertas</option>
+                    <option value="resuelta">Resueltas</option>
+                </select>
+            </div>
+            <div id="demandsContainer"></div>
+        </div>
+
+    </main>
+
+    <div id="noticias" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Noticias</span></div>
+      <h2>📰 Noticias y comunicados</h2>
+      <div class="card"><span class="badge" style="background:var(--primary)">NOVEDAD</span><h3>Información estudiantil</h3><p>Acá vas a encontrar comunicados, novedades académicas y actividades de la facultad.</p><small>Publicado recientemente</small></div>
+      <div id="newsContainer"></div>
+    </div>
+
+    <div id="perfil" class="section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Perfil</span></div>
+      <h2>👤 Mi perfil</h2>
+      <div class="profile-card card">
+        <div class="avatar" id="profileAvatar">👤</div><div><h3 id="profileName">Invitado</h3><p id="profileEmail">Iniciá sesión para guardar tu información.</p></div>
+      </div>
+      <label>Carrera</label><select id="profileCareer" class="calendar-search"><option value="ts">Trabajo Social</option><option value="fono">Fonoaudiología</option><option value="tgcr">Tecnicatura en Gestión Comunitaria del Riesgo</option></select>
+      <button class="btn-action" onclick="saveProfileCareer()">💾 Guardar carrera</button>
+      <button class="btn-action secondary-btn" onclick="openLogin()">🔐 Iniciar / cambiar cuenta</button>
+    </div>
+
+    <div id="admin" class="section admin-section">
+            <div class="back-row"><button class="back-button" onclick="goBack()">← Volver</button><span style="color:#777;font-size:.85rem">Administración</span></div>
+      <h2>⚙️ Panel de administración</h2>
+      <p>Este panel solo debe estar disponible para la cuenta administradora.</p>
+      <div class="stats-grid"><div class="stat-card"><strong id="adminDemandCount">0</strong><span>Demandas</span></div><div class="stat-card"><strong id="adminNewsCount">0</strong><span>Noticias</span></div><div class="stat-card"><strong id="adminFileCount">0</strong><span>Materiales</span></div></div>
+      <div class="card"><h3>📣 Gestionar demandas</h3><p>Desde acá podés revisar, marcar como resueltas y eliminar publicaciones.</p><button class="btn-action" onclick="showSection('demandas')">Ir a demandas</button></div>
+      <div class="card admin-section-card"><h3>📰 Publicar noticia</h3><p>Solo vos vas a poder publicar contenido desde este panel.</p><input id="newsTitle" class="calendar-search" placeholder="Título de la noticia"><textarea id="newsBody" class="calendar-search" rows="4" placeholder="Contenido de la noticia"></textarea><button class="btn-action" onclick="publishNews()">📰 Publicar noticia</button></div>
+      <div class="card admin-section-card"><h3>🚨 Publicar alerta</h3><p>Para avisos importantes que quieras mostrar en el inicio.</p><input id="alertTitle" class="calendar-search" placeholder="Título de la alerta"><textarea id="alertBody" class="calendar-search" rows="3" placeholder="Mensaje de la alerta"></textarea><button class="btn-action" style="background:#dc3545" onclick="publishAlert()">🚨 Publicar alerta</button></div>
+      <div class="card admin-section-card"><h3>📚 Agregar texto a la biblioteca</h3><p>Elegí la carrera, año y materia para cargar un enlace a un PDF o material.</p><select id="adminLibraryCareer" class="calendar-search" onchange="populateAdminYears()"></select><select id="adminLibraryYear" class="calendar-search" onchange="populateAdminSubjects()"></select><select id="adminLibrarySubject" class="calendar-search"></select><input id="adminFileTitle" class="calendar-search" placeholder="Nombre del texto"><input id="adminFileUrl" class="calendar-search" placeholder="Link del PDF/archivo"><button class="btn-action" onclick="adminAddLibraryFile()">⬆️ Agregar texto</button></div>
+      <div id="adminNewsList"></div><div id="adminAlertList"></div>
+    </div>
+
+    <script>
+        // Data estructurada con correlativas oficiales
+        // Planes de estudio verificados con documentación de la FTS-UNLP.
+        // TS: Plan 2015 (Res. Ministerial 495/16).
+        // Fonoaudiología: Plan de Estudios vigente de 5 años.
+        // TGCR: Res. Ministerial 1007/20.
+        const planes = {
+            ts: [
+                // 1° año
+                { año: 1, cod: "211A", nombre: "Trabajo Social I", req: [] },
+                { año: 1, cod: "214", nombre: "Historia Social de América Latina y Argentina", req: [] },
+                { año: 1, cod: "215A", nombre: "Introducción a la Teoría Social", req: [] },
+                { año: 1, cod: "213", nombre: "Epistemología de las Ciencias Sociales", req: [] },
+                { año: 1, cod: "211B", nombre: "Configuración de Problemas Sociales", req: [] },
+                { año: 1, cod: "212A", nombre: "Introducción a la Filosofía", req: [] },
+
+                // 2° año
+                { año: 2, cod: "221", nombre: "Trabajo Social II", req: ["211A"] },
+                { año: 2, cod: "225", nombre: "Teoría Social", req: ["215A"] },
+                { año: 2, cod: "222", nombre: "Investigación Social I", req: ["213"] },
+                { año: 2, cod: "215B", nombre: "Teorías de la cultura y antropologías de las sociedades contemporáneas", req: ["215A"] },
+                { año: 2, cod: "223", nombre: "Introducción a la Psicología", req: [] },
+                { año: 2, cod: "226", nombre: "Teoría del Estado", req: [] },
+                { año: 2, cod: "227", nombre: "Economía Política", req: ["214"] },
+
+                // 3° año
+                { año: 3, cod: "231", nombre: "Trabajo Social III", req: ["211A", "211B", "225"] },
+                { año: 3, cod: "234", nombre: "Conformación de la Estructura Social Argentina", req: ["211B", "225"] },
+                { año: 3, cod: "242", nombre: "Política Social", req: ["214", "226"] },
+                { año: 3, cod: "237", nombre: "Trabajo Social y Sujetos Colectivos", req: ["214", "227"] },
+                { año: 3, cod: "224", nombre: "Perspectivas antropológicas para la intervención social", req: ["215B"] },
+                { año: 3, cod: "232", nombre: "Investigación Social II", req: ["222"] },
+
+                // 4° año
+                { año: 4, cod: "241", nombre: "Trabajo Social IV", req: ["231", "232", "227", "223"] },
+                { año: 4, cod: "243", nombre: "Trabajo Social y análisis institucional", req: ["221", "223"] },
+                { año: 4, cod: "233", nombre: "Psicología del desarrollo y la subjetividad", req: ["223"] },
+                { año: 4, cod: "244", nombre: "Teoría y práctica de la educación", req: ["224"] },
+                { año: 4, cod: "235", nombre: "Derecho de infancia, familia y cuestión penal", req: ["226"] },
+                { año: 4, cod: "253", nombre: "Salud Colectiva", req: ["224"] },
+                { año: 4, cod: "245", nombre: "Teoría del Derecho y Derecho Social", req: ["226"] },
+
+                // 5° año
+                { año: 5, cod: "251", nombre: "Trabajo Social V", req: ["241"] },
+                { año: 5, cod: "252", nombre: "Políticas Públicas: Planificación y Gestión", req: ["234", "242", "212B"] },
+                { año: 5, cod: "212B", nombre: "Filosofía Social", req: ["212A"] },
+                { año: 5, cod: "254", nombre: "Debate contemporáneo en Trabajo Social", req: ["241"] },
+
+                // Trayecto optativo: no es una materia única sino un recorrido de 120 h.
+                { año: 5, cod: "OPT", nombre: "Trayecto optativo (120 hs)", req: [], especial: true },
+                { año: 5, cod: "IDIOMA", nombre: "Idioma (acreditación)", req: [], especial: true }
+            ],
+
+            fono: [
+                // 1° año
+                { año: 1, cod: "F101", nombre: "Ontología del lenguaje y la Comunicación Humana", req: [] },
+                { año: 1, cod: "F102", nombre: "Fundamentos de la Fonoaudiología", req: [] },
+                { año: 1, cod: "F103", nombre: "Epistemología", req: [] },
+                { año: 1, cod: "F104", nombre: "Anatomofisiología fonoaudiológica", req: [] },
+                { año: 1, cod: "F105", nombre: "Acústica", req: [] },
+                { año: 1, cod: "F106", nombre: "Introducción a la Psicología", req: [] },
+                { año: 1, cod: "F107", nombre: "Introducción a la filosofía", req: [] },
+                { año: 1, cod: "F108", nombre: "Bases neuropsicológicas de la comunicación", req: [] },
+                { año: 1, cod: "F109", nombre: "Lingüística", req: [] },
+                { año: 1, cod: "F110", nombre: "Sociología", req: [] },
+
+                // 2° año
+                { año: 2, cod: "F201", nombre: "Procesos lingüísticos y comunicación", req: ["F101", "F102", "F108"] },
+                { año: 2, cod: "F202", nombre: "Función fonatoria y comunicación", req: [] },
+                { año: 2, cod: "F203", nombre: "Teorías de la comunicación", req: [] },
+                { año: 2, cod: "F204", nombre: "Audiología y comunicación", req: [] },
+                { año: 2, cod: "F205", nombre: "Desarrollo de la función oral faríngea", req: [] },
+                { año: 2, cod: "F206", nombre: "Fonética y fonología", req: [] },
+                { año: 2, cod: "F207", nombre: "Metodología de la investigación", req: [] },
+                { año: 2, cod: "F208", nombre: "Acciones y prácticas en audiología", req: [] },
+                { año: 2, cod: "F209", nombre: "Acciones para la salud fonoestomatológica", req: [] },
+                { año: 2, cod: "F210", nombre: "Teorías de la cultura y antropologías de las sociedades contemporáneas", req: [] },
+
+                // 3° año
+                { año: 3, cod: "F301", nombre: "Salud fonatoria", req: [] },
+                { año: 3, cod: "F302", nombre: "Lenguaje infantil e intervención fonoaudiológica", req: ["F201"] },
+                { año: 3, cod: "F303", nombre: "Abordaje terapéutico del sistema vestibular", req: [] },
+                { año: 3, cod: "F304", nombre: "Salud colectiva", req: [] },
+                { año: 3, cod: "F305", nombre: "Introducción al análisis de la estructura social argentina", req: [] },
+                { año: 3, cod: "F306", nombre: "Fonoaudiología, DDHH y género", req: [] },
+                { año: 3, cod: "F307", nombre: "Intervención del lenguaje en población adulta", req: ["F201"] },
+                { año: 3, cod: "F308", nombre: "Promoción y prevención en audiología", req: [] },
+                { año: 3, cod: "F309", nombre: "Teoría y práctica de la educación", req: [] },
+                { año: 3, cod: "F310", nombre: "Psicología del desarrollo y de la subjetividad", req: [] },
+                { año: 3, cod: "F311", nombre: "Taller de Metodología I", req: [] },
+
+                // 4° año
+                { año: 4, cod: "F401", nombre: "Campos de intervención profesional. Práctica integral territorial", req: [] },
+                { año: 4, cod: "F402", nombre: "Voz y habla en la comunicación y el trabajo (Educación y Entrenamiento)", req: [] },
+                { año: 4, cod: "F403", nombre: "Política social", req: [] },
+                { año: 4, cod: "F404", nombre: "Fonoaudiología en ámbitos educativos", req: [] },
+                { año: 4, cod: "F405", nombre: "Fonoaudiología en perspectiva comunitaria", req: [] },
+                { año: 4, cod: "F406", nombre: "Fonoaudiología en atención primaria de la salud", req: [] },
+                { año: 4, cod: "F407", nombre: "Intervención de la deglución en población adulta", req: [] },
+                { año: 4, cod: "F408", nombre: "Gestión y políticas públicas", req: [] },
+                { año: 4, cod: "F409", nombre: "Taller de Metodología II", req: [] },
+
+                // 5° año
+                { año: 5, cod: "F501", nombre: "Trabajo Final Integrador", req: [], especial: true },
+                { año: 5, cod: "F502", nombre: "Ética y deontología", req: [] }
+            ],
+
+            tgcr: [
+                // 1° año
+                { año: 1, cod: "711", nombre: "Estado, territorio y problemática social", req: [] },
+                { año: 1, cod: "712", nombre: "Gestión del riesgo y matrices de desarrollo", req: [] },
+                { año: 1, cod: "713", nombre: "Riesgo, conflictos territoriales y cambio climático", req: [] },
+                { año: 1, cod: "714", nombre: "Dinámicas naturales y eventos extremos en Argentina", req: [] },
+                { año: 1, cod: "715", nombre: "Derechos Humanos y territorio", req: [] },
+                { año: 1, cod: "716", nombre: "Planificación y gestión socio-estatal", req: [] },
+                { año: 1, cod: "717", nombre: "Educación popular y organización comunitaria", req: [] },
+
+                // 2° año
+                { año: 2, cod: "721", nombre: "Intervención Social I", req: ["711"] },
+                { año: 2, cod: "722", nombre: "Gestión del riesgo I", req: ["712"] },
+                { año: 2, cod: "723", nombre: "Salud y epidemiología sociocultural", req: ["716"] },
+                { año: 2, cod: "724", nombre: "Territorio y estrategias de comunicación", req: [] },
+                { año: 2, cod: "725", nombre: "Gestión del riesgo II", req: ["722"] },
+                { año: 2, cod: "726", nombre: "Metodología de la investigación y producción del conocimiento", req: [] },
+                { año: 2, cod: "727", nombre: "Producción de estrategias de comunicación y educación", req: ["724"] },
+
+                // 3° año
+                { año: 3, cod: "731", nombre: "Intervención Social II", req: ["721"] },
+                { año: 3, cod: "732", nombre: "Seguridad humana y procesos comunitarios", req: ["722"] },
+                { año: 3, cod: "733", nombre: "Normativas para la seguridad humana", req: [] },
+                { año: 3, cod: "734", nombre: "Trabajo Social en gestión del riesgo", req: ["725"] },
+                { año: 3, cod: "735", nombre: "Género e intervención profesional", req: ["711"] },
+                { año: 3, cod: "736", nombre: "Gestión sociocultural y procesos colectivos", req: [] },
+                { año: 3, cod: "737", nombre: "Abordaje psicosocial en situaciones complejas", req: [] }
+            ]
+        };
+
+        // Estado del usuario (simulado)
+        let estadosMaterias = {};
+
+        let sectionHistory = ['inicio'];
+        let currentSection = 'inicio';
+
+        function showSection(id, fromBack = false) {
+            if(id === 'admin' && !isAdmin()) return alert('Solo el administrador puede acceder a esta sección.');
+            if(!document.getElementById(id)) return;
+            if(id === currentSection) return;
+            if(!fromBack) sectionHistory.push(id);
+            currentSection = id;
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-scroll button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.mobile-bottom-nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.querySelectorAll('.nav-scroll button').forEach(b => { if(b.getAttribute('onclick')?.includes("'"+id+"'")) b.classList.add('active'); });
+            document.querySelectorAll('.mobile-bottom-nav button').forEach(b => { if(b.dataset.mobileSection===id) b.classList.add('active'); });
+            if(id==='perfil') renderProfile();
+            if(id==='admin') renderNews();
+            window.scrollTo({top:0, behavior:'smooth'});
+            updateBackButtons();
+        }
+
+        function goBack() {
+            if(sectionHistory.length > 1) {
+                sectionHistory.pop();
+                showSection(sectionHistory[sectionHistory.length - 1], true);
+            } else {
+                showSection('inicio', true);
+            }
+        }
+
+        function updateBackButtons() {
+            document.querySelectorAll('.back-row').forEach(row => {
+                row.style.display = currentSection === 'inicio' ? 'none' : 'flex';
+            });
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            document.body.classList.toggle('light');
+        }
+
+        function updateStatus(cod, val) {
+            estadosMaterias[cod] = val;
+            renderPlan();
+        }
+
+        function checkCorrelativas(reqs) {
+            if(reqs.length === 0) return true;
+            return reqs.every(r => estadosMaterias[r] === 'aprobada' || estadosMaterias[r] === 'regular' || estadosMaterias[r] === 'final');
+        }
+
+        function renderPlan() {
+            const carrera = document.getElementById('careerSelect').value;
+            const container = document.getElementById('planContainer');
+            const materias = planes[carrera];
+             const materiasContables = materias.filter(m => !m.especial);
+            
+            container.innerHTML = '';
+            
+            let html = '';
+            let currentYear = 0;
+            let aprobadas = 0;
+            let finales = 0;
+
+            materias.forEach(mat => {
+                if(mat.año !== currentYear) {
+                    html += `<h3 style="margin-top:20px; border-bottom: 2px solid var(--primary);">${mat.año}° Año</h3>`;
+                    currentYear = mat.año;
+                }
+
+                if(!estadosMaterias[mat.cod]) estadosMaterias[mat.cod] = 'pendiente';
+                if(!mat.especial && estadosMaterias[mat.cod] === 'aprobada') aprobadas++;
+
+                const habilitada = checkCorrelativas(mat.req);
+                const reqText = mat.especial ? 'Requisito/recorrido especial del plan' : (mat.req.length > 0 ? `Requiere: ${mat.req.join(', ')}` : 'Sin correlativas');
+                const lockIcon = habilitada ? '' : '🔒 ';
+                
+                html += `
+                <div class="subject-item" style="opacity: ${habilitada ? '1' : '0.5'}">
+                    <div style="flex:1;">
+                        <strong>${lockIcon}${mat.nombre}</strong> <small>(${mat.cod})</small>
+                        <span class="correlativa-info">${reqText}</span>
+                    </div>
+                    <select class="status-select" onchange="updateStatus('${mat.cod}', this.value)">
+                        <option value="pendiente" ${estadosMaterias[mat.cod] === 'pendiente' ? 'selected' : ''}>⚪ Pendiente</option>
+                        <option value="cursando" ${estadosMaterias[mat.cod] === 'cursando' ? 'selected' : ''}>🔵 Cursando</option>
+                        <option value="regular" ${estadosMaterias[mat.cod] === 'regular' ? 'selected' : ''}>🟡 Regular</option>
+                        <option value="final" ${estadosMaterias[mat.cod] === 'final' ? 'selected' : ''}>🔴 Final</option>
+                        <option value="aprobada" ${estadosMaterias[mat.cod] === 'aprobada' ? 'selected' : ''}>🟢 Aprobada</option>
+                    </select>
+                </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            
+            // Actualizar barra progreso
+            document.getElementById('aprobadasCount').innerText = `${aprobadas} de ${materiasContables.length}`;
+            const pct = materiasContables.length > 0 ? (aprobadas / materiasContables.length) * 100 : 0;
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressPercent').innerText = Math.round(pct) + '%';
+            document.getElementById('finalCount').innerText = finales;
+        }
+
+
+        // ---------------- CALENDARIO ----------------
+        const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+        const weekNames = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
+        let calendarDate = new Date();
+        let calendarEvents = JSON.parse(localStorage.getItem("ftsCalendarEvents") || "[]");
+
+        function dateKey(y,m,d){ return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`; }
+
+        function renderCalendar(){
+            const y=calendarDate.getFullYear(), m=calendarDate.getMonth();
+            document.getElementById("calendarTitle").textContent=`${monthNames[m]} ${y}`;
+            const grid=document.getElementById("calendarGrid");
+            grid.innerHTML=weekNames.map(x=>`<div class="calendar-weekday">${x}</div>`).join("");
+            const first=new Date(y,m,1);
+            let start=(first.getDay()+6)%7;
+            const days=new Date(y,m+1,0).getDate();
+            const prevDays=new Date(y,m,0).getDate();
+            const total=Math.ceil((start+days)/7)*7;
+            const today=new Date();
+
+            for(let i=0;i<total;i++){
+                let day=i-start+1, yy=y, mm=m;
+                let other=false;
+                if(day<1){ day=prevDays+day; mm=m-1; if(mm<0){mm=11;yy--;}; other=true; }
+                else if(day>days){ day=day-days; mm=m+1; if(mm>11){mm=0;yy++;}; other=true; }
+                const key=dateKey(yy,mm,day);
+                const ev=calendarEvents.filter(e=>e.date===key);
+                const isToday=yy===today.getFullYear()&&mm===today.getMonth()&&day===today.getDate();
+                grid.innerHTML += `<button class="calendar-day ${other?"other-month":""} ${isToday?"today":""} ${ev.length?"has-event":""}" onclick="selectCalendarDate('${key}')">
+                    <div class="calendar-day-number">${day}</div>
+                    ${ev.slice(0,2).map(e=>`<div class="calendar-event-list">• ${escapeHtml(e.title)}</div>`).join("")}
+                </button>`;
+            }
+        }
+        function changeMonth(delta){ calendarDate.setMonth(calendarDate.getMonth()+delta); renderCalendar(); searchCalendar(); }
+        function goToday(){ calendarDate=new Date(); renderCalendar(); searchCalendar(); }
+        function selectCalendarDate(key){
+            const [y,m,d]=key.split("-").map(Number);
+            const events=calendarEvents.filter(e=>e.date===key);
+            const box=document.getElementById("selectedDateEvents");
+            box.style.display="block";
+            box.innerHTML=`<h3>📅 ${String(d).padStart(2,"0")}/${String(m).padStart(2,"0")}/${y}</h3>`+
+                (events.length?events.map(e=>`<p><strong>${escapeHtml(e.title)}</strong><br>${escapeHtml(e.description||"")}</p>`).join("<hr>"):"<p>No hay eventos cargados para esta fecha.</p>");
+        }
+        function searchCalendar(){
+            const q=(document.getElementById("calendarSearch").value||"").toLowerCase().trim();
+            const box=document.getElementById("calendarSearchResults");
+            if(!q){ box.innerHTML=""; return; }
+            const terms=q.replace(/-/g,"/").split(/[\/\s]+/).filter(Boolean);
+            const results=calendarEvents.filter(e=>{
+                const text=(e.date+" "+e.title+" "+(e.description||"")+" "+monthNames[Number(e.date.slice(5,7))-1]).toLowerCase();
+                return terms.every(t=>text.includes(t));
+            });
+            box.innerHTML=results.length ? `<div class="card"><h3>Resultados</h3>${results.map(e=>`<p><strong>${e.date.split("-").reverse().join("/")}</strong> — ${escapeHtml(e.title)}</p>`).join("")}</div>` : `<div class="card">No se encontraron eventos para esa búsqueda.</div>`;
+        }
+        function addCalendarEvent(){
+            const overlay=document.getElementById("eventModalOverlay");
+            document.getElementById("eventDate").value=dateKey(calendarDate.getFullYear(),calendarDate.getMonth(),calendarDate.getDate());
+            document.getElementById("eventTitle").value=""; document.getElementById("eventDescription").value="";
+            overlay.style.display="flex"; setTimeout(()=>document.getElementById("eventTitle").focus(),50);
+        }
+        function closeEventModal(){document.getElementById("eventModalOverlay").style.display="none";}
+        function saveCalendarEvent(){
+            const date=document.getElementById("eventDate").value, title=document.getElementById("eventTitle").value.trim(), description=document.getElementById("eventDescription").value.trim();
+            if(!date||!title)return alert("Completá la fecha y el título.");
+            calendarEvents.push({date,title,description}); localStorage.setItem("ftsCalendarEvents",JSON.stringify(calendarEvents));
+            closeEventModal(); calendarDate=new Date(date+"T12:00:00"); renderCalendar(); searchCalendar(); selectCalendarDate(date);
+        }
+
+        // ---------------- BIBLIOTECA ----------------
+        let libraryPath={career:null,year:null,subject:null};
+        const libraryFiles=JSON.parse(localStorage.getItem("ftsLibraryFiles")||"{}");
+
+        function getSubjects(career,year){
+            return (planes[career]||[]).filter(m=>m.año===year && !m.especial);
+        }
+        function careerLabel(c){
+            return c==="ts"?"Licenciatura en Trabajo Social":c==="fono"?"Licenciatura en Fonoaudiología":"Tecnicatura en Gestión Comunitaria del Riesgo";
+        }
+        function renderLibrary(){
+            const q=(document.getElementById("librarySearch").value||"").toLowerCase().trim();
+            const bc=document.getElementById("libraryBreadcrumb"), box=document.getElementById("libraryContainer");
+            if(!libraryPath.career){
+                bc.innerHTML="";
+                box.innerHTML=`<div class="folder-grid">${Object.keys(planes).map(c=>`<div class="folder-card" onclick="openLibraryCareer('${c}')">📁 <strong>${careerLabel(c)}</strong><br><small>Plan organizado por año</small></div>`).join("")}</div>`;
+                return;
+            }
+            if(!libraryPath.year){
+                bc.innerHTML=`<button onclick="resetLibrary()">Biblioteca</button> / ${careerLabel(libraryPath.career)}`;
+                const years=[...new Set((planes[libraryPath.career]||[]).map(m=>m.año))].sort();
+                box.innerHTML=`<div class="folder-grid">${years.map(y=>`<div class="folder-card" onclick="openLibraryYear(${y})">📂 <strong>${y}° año</strong><br><small>${getSubjects(libraryPath.career,y).length} materias</small></div>`).join("")}</div>`;
+                return;
+            }
+            if(!libraryPath.subject){
+                bc.innerHTML=`<button onclick="resetLibrary()">Biblioteca</button> / <button onclick="openLibraryCareer('${libraryPath.career}')">${careerLabel(libraryPath.career)}</button> / ${libraryPath.year}° año`;
+                let subs=getSubjects(libraryPath.career,libraryPath.year);
+                if(q) subs=subs.filter(s=>s.nombre.toLowerCase().includes(q)||s.cod.toLowerCase().includes(q));
+                box.innerHTML=`<div class="folder-grid">${subs.map(s=>`<div class="folder-card" onclick="openLibrarySubject('${s.cod}')">📁 <strong>${escapeHtml(s.nombre)}</strong><br><small>Código: ${s.cod}</small></div>`).join("") || "<div class='card'>No se encontraron materias.</div>"}</div>`;
+                return;
+            }
+            const subject=getSubjects(libraryPath.career,libraryPath.year).find(s=>s.cod===libraryPath.subject);
+            bc.innerHTML=`<button onclick="resetLibrary()">Biblioteca</button> / <button onclick="openLibraryCareer('${libraryPath.career}')">${careerLabel(libraryPath.career)}</button> / <button onclick="openLibraryYear(${libraryPath.year})">${libraryPath.year}° año</button> / ${escapeHtml(subject?.nombre||"Materia")}`;
+            const key=`${libraryPath.career}_${libraryPath.subject}`;
+            const files=libraryFiles[key]||[];
+            box.innerHTML=`<div class="card"><h3>📁 ${escapeHtml(subject?.nombre||"Materia")}</h3>
+                ${isAdmin()?`<div class="admin-only-library"><p style="color:#777;font-size:.85rem">Como administrador podés agregar materiales desde ⚙️ Administración.</p></div>`:""}
+                <hr style="margin:15px 0">
+                ${files.length?files.map((f,i)=>`<div class="card file-card"><div>📄 <strong>${escapeHtml(f.title)}</strong><br><small>${escapeHtml(f.url||"Archivo guardado como referencia")}</small></div>${f.url?`<a class="btn-action" href="${escapeAttr(f.url)}" target="_blank" rel="noopener">Abrir</a>`:""}</div>`).join(""):"<p>Todavía no hay textos cargados en esta materia.</p>"}</div>`;
+        }
+        function resetLibrary(){libraryPath={career:null,year:null,subject:null};renderLibrary();}
+        function openLibraryCareer(c){libraryPath={career:c,year:null,subject:null};renderLibrary();}
+        function openLibraryYear(y){libraryPath.year=y;libraryPath.subject=null;renderLibrary();}
+        function openLibrarySubject(cod){libraryPath.subject=cod;renderLibrary();}
+        function addLibraryFile(){
+            const title=document.getElementById("fileTitle").value.trim(), url=document.getElementById("fileUrl").value.trim();
+            if(!title)return alert("Poné un nombre para el texto.");
+            const key=`${libraryPath.career}_${libraryPath.subject}`;
+            libraryFiles[key]=libraryFiles[key]||[];
+            libraryFiles[key].push({title,url});
+            localStorage.setItem("ftsLibraryFiles",JSON.stringify(libraryFiles));
+            renderLibrary();
+        }
+
+        // ---------------- DEMANDAS ----------------
+        let demands=JSON.parse(localStorage.getItem("ftsDemands")||"[]");
+        function publishDemand(){
+            const title=document.getElementById("demandTitle").value.trim(), description=document.getElementById("demandDescription").value.trim();
+            if(!title||!description)return alert("Completá el título y la descripción.");
+            demands.unshift({id:Date.now(),title,description,status:"abierta",date:new Date().toLocaleDateString("es-AR")});
+            localStorage.setItem("ftsDemands",JSON.stringify(demands));
+            document.getElementById("demandTitle").value=""; document.getElementById("demandDescription").value="";
+            renderDemands();
+        }
+        function renderDemands(){
+            const q=(document.getElementById("demandSearch").value||"").toLowerCase(), f=document.getElementById("demandFilter").value;
+            const list=demands.filter(d=>(f==="todas"||d.status===f)&&(`${d.title} ${d.description}`).toLowerCase().includes(q));
+            document.getElementById("demandsContainer").innerHTML=list.length?list.map(d=>`<div class="card">
+                <span class="demand-status ${d.status}">${d.status==="resuelta"?"RESUELTA":"ABIERTA"}</span>
+                <h3>${escapeHtml(d.title)}</h3><p>${escapeHtml(d.description)}</p>
+                <div class="demand-meta">Publicada: ${escapeHtml(d.date)}</div>
+                <div class="demand-actions"><button class="btn-action" onclick="toggleDemand(${d.id})">${d.status==="resuelta"?"Reabrir":"Marcar como resuelta"}</button>
+                <button class="btn-action delete-demand admin-only" data-admin-only="true" onclick="deleteDemand(${d.id})">🗑️ Eliminar</button></div>
+            </div>`).join(""):"<div class='card'>No hay demandas que coincidan con la búsqueda.</div>";
+        }
+        function toggleDemand(id){const d=demands.find(x=>x.id===id);if(!d)return;d.status=d.status==="resuelta"?"abierta":"resuelta";localStorage.setItem("ftsDemands",JSON.stringify(demands));renderDemands();}
+        function deleteDemand(id){
+            if(!isAdmin()) return alert("Solo el administrador puede eliminar demandas.");
+            const d=demands.find(x=>x.id===id);
+            if(!d) return;
+            if(!confirm("¿Eliminar esta demanda definitivamente?")) return;
+            demands=demands.filter(x=>x.id!==id);
+            localStorage.setItem("ftsDemands",JSON.stringify(demands));
+            renderDemands();
+        }
+
+        // ---------------- AUTENTICACIÓN (prototipo local) ----------------
+        // Importante: este login funciona localmente en el navegador. Para seguridad real y
+        // cuentas compartidas entre estudiantes hace falta conectar Supabase/Firebase.
+        let authMode="login";
+        let currentUser=JSON.parse(localStorage.getItem("ftsCurrentUser")||"null");
+        let users=JSON.parse(localStorage.getItem("ftsUsers")||"[]");
+        // Cambiá este correo por el tuyo antes de publicar si querés probar el rol administrador.
+        const ADMIN_EMAIL="PONER_TU_CORREO_AQUI";
+        function isAdmin(){ return !!currentUser && currentUser.email.toLowerCase()===ADMIN_EMAIL.toLowerCase(); }
+        function openLogin(){ document.getElementById("loginOverlay").style.display="flex"; }
+        function closeLogin(){ document.getElementById("loginOverlay").style.display="none"; }
+        function toggleAuthMode(){
+            authMode=authMode==="login"?"register":"login";
+            document.getElementById("loginTitle").textContent=authMode==="login"?"🔐 Iniciar sesión":"📝 Crear cuenta";
+            document.getElementById("loginName").style.display=authMode==="login"?"none":"block";
+            document.getElementById("loginSubmit").textContent=authMode==="login"?"Iniciar sesión":"Crear cuenta";
+            document.getElementById("authSwitchText").textContent=authMode==="login"?"¿No tenés cuenta?":"¿Ya tenés cuenta?";
+            document.getElementById("authSwitch").textContent=authMode==="login"?"Registrate":"Iniciá sesión";
+        }
+        function submitAuth(){
+            const name=document.getElementById("loginName").value.trim();
+            const email=document.getElementById("loginEmail").value.trim().toLowerCase();
+            const password=document.getElementById("loginPassword").value;
+            if(!email||!password) return alert("Completá correo y contraseña.");
+            if(authMode==="register") {
+                if(!name) return alert("Poné tu nombre.");
+                if(users.some(u=>u.email===email)) return alert("Ese correo ya está registrado.");
+                const u={id:Date.now(),name,email,password}; users.push(u); localStorage.setItem("ftsUsers",JSON.stringify(users)); currentUser=u; localStorage.setItem("ftsCurrentUser",JSON.stringify(u));
+            } else {
+                const u=users.find(x=>x.email===email&&x.password===password);
+                if(!u) return alert("Correo o contraseña incorrectos.");
+                currentUser=u; localStorage.setItem("ftsCurrentUser",JSON.stringify(u));
+            }
+            closeLogin(); updateAuthUI(); updateGreeting(); renderDemands();
+        }
+        function logout(){ currentUser=null; localStorage.removeItem("ftsCurrentUser"); updateAuthUI(); renderDemands(); }
+        function updateAuthUI(){
+            const label=document.getElementById("authUser"), btn=document.getElementById("authButton");
+            if(currentUser){ label.textContent=(isAdmin()?"👑 ":"👤 ")+currentUser.name; btn.textContent="Cerrar sesión"; btn.onclick=logout; }
+            else { label.textContent="No iniciado"; btn.textContent="🔐 Iniciar sesión"; btn.onclick=openLogin; }
+            document.querySelectorAll(".admin-only").forEach(el=>el.style.display=isAdmin()?"inline-block":"none");
+        }
+
+        function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+        function escapeAttr(s){return escapeHtml(s).replace(/`/g,"&#096;");}
+
+
+        // ---------------- PERFIL / NOTICIAS / ADMIN ----------------
+        let news=JSON.parse(localStorage.getItem("ftsNews")||"[]");
+        function saveProfileCareer(){
+          if(!currentUser) return alert("Iniciá sesión primero.");
+          currentUser.career=document.getElementById("profileCareer").value;
+          users=users.map(u=>u.id===currentUser.id?currentUser:u);
+          localStorage.setItem("ftsUsers",JSON.stringify(users));localStorage.setItem("ftsCurrentUser",JSON.stringify(currentUser));
+          document.getElementById("careerSelect").value=currentUser.career; renderPlan(); alert("Carrera guardada.");
+        }
+        function renderProfile(){
+          const n=document.getElementById("profileName"),e=document.getElementById("profileEmail"),a=document.getElementById("profileAvatar"),c=document.getElementById("profileCareer");
+          if(currentUser){n.textContent=currentUser.name||"Estudiante";e.textContent=currentUser.email;a.textContent=(currentUser.name||"E").charAt(0).toUpperCase();c.value=currentUser.career||"ts";}
+          else {n.textContent="Invitado";e.textContent="Iniciá sesión para guardar tu información.";a.textContent="👤";}
+        }
+        function publishNews(){
+          if(!isAdmin()) return alert("Solo el administrador puede publicar noticias.");
+          const title=document.getElementById("newsTitle").value.trim(),body=document.getElementById("newsBody").value.trim();
+          if(!title||!body)return alert("Completá título y contenido.");
+          news.unshift({id:Date.now(),title,body,date:new Date().toLocaleDateString("es-AR")});localStorage.setItem("ftsNews",JSON.stringify(news));
+          document.getElementById("newsTitle").value="";document.getElementById("newsBody").value="";renderNews();
+        }
+        function deleteNews(id){if(!isAdmin())return;news=news.filter(n=>n.id!==id);localStorage.setItem("ftsNews",JSON.stringify(news));renderNews();}
+        function renderNews(){
+          const box=document.getElementById("newsContainer"), adminBox=document.getElementById("adminNewsList");
+          box.innerHTML=news.map(n=>`<div class="card"><span class="badge" style="background:var(--secondary)">COMUNICADO</span><h3>${escapeHtml(n.title)}</h3><p>${escapeHtml(n.body)}</p><small>${escapeHtml(n.date)}</small></div>`).join("")||"<div class='card'>Todavía no hay comunicados.</div>";
+          adminBox.innerHTML=isAdmin()?news.map(n=>`<div class="card"><strong>${escapeHtml(n.title)}</strong><button class="btn-action" style="background:#dc3545" onclick="deleteNews(${n.id})">🗑️ Eliminar</button></div>`).join(""):"";
+          document.getElementById("adminNewsCount").textContent=news.length;
+          document.getElementById("adminDemandCount").textContent=demands.length;
+          const total=Object.values(libraryFiles).reduce((a,b)=>a+b.length,0);document.getElementById("adminFileCount").textContent=total;
+        }
+        let alerts=JSON.parse(localStorage.getItem("ftsAlerts")||"[]");
+        function publishAlert(){
+          if(!isAdmin()) return alert("Solo el administrador puede publicar alertas.");
+          const title=document.getElementById("alertTitle").value.trim(), body=document.getElementById("alertBody").value.trim();
+          if(!title||!body)return alert("Completá título y mensaje.");
+          alerts.unshift({id:Date.now(),title,body,date:new Date().toLocaleDateString("es-AR")}); localStorage.setItem("ftsAlerts",JSON.stringify(alerts));
+          document.getElementById("alertTitle").value="";document.getElementById("alertBody").value="";renderAlerts();
+        }
+        function deleteAlert(id){if(!isAdmin())return;alerts=alerts.filter(a=>a.id!==id);localStorage.setItem("ftsAlerts",JSON.stringify(alerts));renderAlerts();}
+        function renderAlerts(){
+          const home=document.getElementById("homeAlerts"); if(home) home.innerHTML=alerts.slice(0,3).map(a=>`<div class="card" style="border-left:4px solid #dc3545"><span class="badge" style="background:#dc3545">🚨 ALERTA</span><h3>${escapeHtml(a.title)}</h3><p>${escapeHtml(a.body)}</p><small>${escapeHtml(a.date)}</small></div>`).join("");
+          const list=document.getElementById("adminAlertList"); if(list) list.innerHTML=isAdmin()?alerts.map(a=>`<div class="card"><strong>🚨 ${escapeHtml(a.title)}</strong><button class="btn-action" style="background:#dc3545" onclick="deleteAlert(${a.id})">🗑️ Eliminar</button></div>`).join(""):"";
+        }
+        function populateAdminYears(){
+          const c=document.getElementById("adminLibraryCareer").value, ys=[...new Set((planes[c]||[]).map(m=>m.año))].sort();
+          document.getElementById("adminLibraryYear").innerHTML=ys.map(y=>`<option value="${y}">${y}° año</option>`).join(""); populateAdminSubjects();
+        }
+        function populateAdminSubjects(){
+          const c=document.getElementById("adminLibraryCareer").value,y=Number(document.getElementById("adminLibraryYear").value),subs=getSubjects(c,y);
+          document.getElementById("adminLibrarySubject").innerHTML=subs.map(x=>`<option value="${escapeAttr(x.cod)}">${escapeHtml(x.nombre)}</option>`).join("");
+        }
+        function initAdminLibrary(){
+          const el=document.getElementById("adminLibraryCareer"); if(!el)return; el.innerHTML=Object.keys(planes).map(c=>`<option value="${c}">${careerLabel(c)}</option>`).join(""); populateAdminYears();
+        }
+        function adminAddLibraryFile(){
+          if(!isAdmin())return alert("Solo el administrador puede agregar textos.");
+          const c=document.getElementById("adminLibraryCareer").value,y=Number(document.getElementById("adminLibraryYear").value),cod=document.getElementById("adminLibrarySubject").value,title=document.getElementById("adminFileTitle").value.trim(),url=document.getElementById("adminFileUrl").value.trim();
+          if(!title)return alert("Poné un nombre para el texto.");
+          const key=`${c}_${cod}`; libraryFiles[key]=libraryFiles[key]||[]; libraryFiles[key].push({title,url}); localStorage.setItem("ftsLibraryFiles",JSON.stringify(libraryFiles));
+          document.getElementById("adminFileTitle").value="";document.getElementById("adminFileUrl").value="";renderLibrary();renderNews();alert("Texto agregado a la biblioteca.");
+        }
+
+        function updateAdminVisibility(){
+          document.querySelectorAll(".admin-only").forEach(el=>el.style.display=isAdmin()?"inline-block":"none");
+          if(!isAdmin() && document.getElementById("admin")?.classList.contains("active")) showSection("inicio");
+          renderNews();
+        }
+
+        // ---------------- ESTADO FINAL ----------------
+        // FINAL = materia regularizada pero pendiente de aprobación del final.
+        // Cuenta como regularizada, no como aprobada.
+
+        // Init
+        renderPlan();
+        updateBackButtons();
+        renderCalendar();
+        renderLibrary();
+        renderDemands();
+        updateAuthUI();
+        updateAdminVisibility();
+        initAdminLibrary();
+        renderAlerts();
+        renderProfile();
+    </script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+</script>
+
+    <nav class="mobile-bottom-nav" aria-label="Navegación móvil">
+        <button class="active" data-mobile-section="inicio" onclick="showSection('inicio')"><span>🏠</span>Inicio</button>
+        <button data-mobile-section="carrera" onclick="showSection('carrera')"><span>🎓</span>Carrera</button>
+        <button data-mobile-section="estudiemos" onclick="showSection('estudiemos')"><span>📚</span>Biblioteca</button>
+        <button data-mobile-section="calendario" onclick="showSection('calendario')"><span>📅</span>Agenda</button>
+        <button data-mobile-section="demandas" onclick="showSection('demandas')"><span>📣</span>Demandas</button>
+    </nav>
+</body>
+</html>
